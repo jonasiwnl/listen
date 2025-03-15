@@ -3,6 +3,7 @@
 """
 A MacOS script to convert speech to text using the Whisper model. Assumes ffmpeg is installed on the system.
 """
+
 import subprocess
 import tempfile
 import whisper
