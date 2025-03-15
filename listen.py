@@ -24,22 +24,22 @@ def find_microphone():
 
 
 def record_audio():
-    temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
     temp.close()
     
     process = subprocess.Popen(
-        ["ffmpeg", "-y", "-f", "avfoundation", "-i", ":1", temp.name], 
+        ['ffmpeg', '-y', '-f', 'avfoundation', '-i', ':1', temp.name], 
         stdin=subprocess.PIPE,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
 
-    print("Recording... Press Ctrl+C to stop.")
+    print('Recording... Press Ctrl+C to stop.')
 
     try:
         process.wait()
     except KeyboardInterrupt:
-        print("\nStopping recording...")
+        print('\nStopping recording...')
         process.communicate(b'q')
         process.wait(timeout=2)
         process.terminate()
@@ -53,7 +53,7 @@ def record_audio():
 
 
 def transcribe_audio(filename: str):
-    print("Transcribing...")
+    print('Transcribing...')
 
     # Suppress stdout and stderr
     devnull = open(os.devnull, 'w')
@@ -63,7 +63,7 @@ def transcribe_audio(filename: str):
     sys.stderr = devnull
 
     try:
-        model = whisper.load_model("turbo")
+        model = whisper.load_model('turbo')
     finally:
         # Restore stdout and stderr
         sys.stdout = old_stdout
@@ -71,13 +71,13 @@ def transcribe_audio(filename: str):
         devnull.close()
 
     res = model.transcribe(filename, verbose=False)
-    return res["text"]
+    return res['text']
 
 
 def copy_to_clipboard(text):
     process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
     process.communicate(input=text.encode('utf-8'))
-    print("Copied to clipboard!")
+    print('Copied to clipboard!')
 
 
 def main():
