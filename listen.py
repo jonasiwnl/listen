@@ -4,11 +4,20 @@
 A MacOS script to convert speech to text using the Whisper model. Assumes ffmpeg is installed on the system.
 """
 
+import argparse
+import os
 import subprocess
+import sys
 import tempfile
 import whisper
-import os
-import sys
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--no-copy', action='store_true')
+    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('-l', '--language', type=str, default='en')
+    return parser.parse_args()
 
 
 def find_microphone():
@@ -23,15 +32,18 @@ def find_microphone():
     pass
 
 
-def record_audio():
+def record_audio(args):
     temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
     temp.close()
-    
+
+    ffmpeg_stdout = sys.stdout if args.verbose else subprocess.DEVNULL
+    ffmpeg_stderr = sys.stderr if args.verbose else subprocess.DEVNULL
+ 
     process = subprocess.Popen(
         ['ffmpeg', '-y', '-f', 'avfoundation', '-i', ':1', temp.name], 
         stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stdout=ffmpeg_stdout,
+        stderr=ffmpeg_stderr,
     )
 
     print('Recording... Press Ctrl+C to stop.')
@@ -52,26 +64,26 @@ def record_audio():
     return temp.name
 
 
-def transcribe_audio(filename: str):
+def transcribe_audio(filename: str, args):
     print('Transcribing...')
 
-    # Suppress stdout and stderr
     devnull = open(os.devnull, 'w')
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = devnull
-    sys.stderr = devnull
+    stdout = sys.stdout
+    stderr = sys.stderr
+
+    if not args.verbose:
+        sys.stdout = devnull
+        sys.stderr = devnull
 
     try:
         model = whisper.load_model('turbo')
     finally:
-        # Restore stdout and stderr
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        sys.stdout = stdout
+        sys.stderr = stderr
         devnull.close()
 
-    res = model.transcribe(filename, verbose=False)
-    return res['text']
+    res = model.transcribe(filename, verbose=args.verbose, language=args.language)
+    return res['text'].strip()
 
 
 def copy_to_clipboard(text):
@@ -81,11 +93,12 @@ def copy_to_clipboard(text):
 
 
 def main():
+    args = parse_args()
     find_microphone()
-    filename = record_audio()
-    transcription = transcribe_audio(filename).strip()
+    filename = record_audio(args)
+    transcription = transcribe_audio(filename, args)
     print(f'Transcription: {transcription}')
-    copy_to_clipboard(transcription)
+    if not args.no_copy: copy_to_clipboard(transcription)
 
 
 if __name__ == '__main__':

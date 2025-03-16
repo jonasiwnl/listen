@@ -6,8 +6,8 @@ then
     echo "ffmpeg could not be found. Installing ffmpeg..."
     if ! command -v brew &> /dev/null
     then
-        echo "Homebrew is not installed. Please install Homebrew first."
-        exit 1
+        echo "Homebrew is not installed. Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
     brew install ffmpeg
 else
