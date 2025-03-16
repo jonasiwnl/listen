@@ -10,3 +10,9 @@ A python3 runtime is required.
 2) Run `./install.sh`
 
 This will install `brew` and `ffmpeg` if you don't already have them.
+
+## TODO
+
+- [ ] Better installation
+- [x] Choose microphone cmd line option
+- C++/Go port?

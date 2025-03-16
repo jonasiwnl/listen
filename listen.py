@@ -16,20 +16,36 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-copy', action='store_true')
     parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--choose-mic', action='store_true')
     parser.add_argument('-l', '--language', type=str, default='en')
     return parser.parse_args()
 
 
-def find_microphone():
-    # If we want a way to choose a specific microphone
+def find_microphones():
+    res = subprocess.run(
+        ['ffmpeg', '-f', 'avfoundation', '-list_devices', 'true', '-i', '""'], 
+        text=True,
+        capture_output=True,
+    )
+    devices = [line.strip() for line in res.stderr.split('\n') if 'microphone' in line.lower()]
+    return devices
 
-    # res = subprocess.run(
-    #     ['ffmpeg', '-f', 'avfoundation', '-list_devices', 'true', '-i', '""'], 
-    #     text=True,
-    #     capture_output=True,
-    # )
 
-    pass
+def choose_microphone():
+    devices = find_microphones()
+    if not devices:
+        print('No microphones found.')
+        sys.exit(1)
+ 
+    print('Available microphones:')
+    for i, device in enumerate(devices): print(f'{i}: {device}')
+ 
+    choice = int(input('Choose a microphone: '))
+    while choice < 0 or choice >= len(devices):
+        print('Invalid choice.')
+        choice = int(input('Choose a microphone: '))
+
+    return choice
 
 
 def record_audio(args):
@@ -38,9 +54,12 @@ def record_audio(args):
 
     ffmpeg_stdout = sys.stdout if args.verbose else subprocess.DEVNULL
     ffmpeg_stderr = sys.stderr if args.verbose else subprocess.DEVNULL
+
+    mic_index = ':1'
+    if args.choose_mic: mic_index = f':{choose_microphone()}'
  
     process = subprocess.Popen(
-        ['ffmpeg', '-y', '-f', 'avfoundation', '-i', ':1', temp.name], 
+        ['ffmpeg', '-y', '-f', 'avfoundation', '-i', mic_index, temp.name], 
         stdin=subprocess.PIPE,
         stdout=ffmpeg_stdout,
         stderr=ffmpeg_stderr,
@@ -94,7 +113,6 @@ def copy_to_clipboard(text):
 
 def main():
     args = parse_args()
-    find_microphone()
     filename = record_audio(args)
     transcription = transcribe_audio(filename, args)
     print(f'Transcription: {transcription}')
