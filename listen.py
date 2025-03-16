@@ -21,22 +21,24 @@ def parse_args():
     return parser.parse_args()
 
 
-def find_microphones():
+def find_microphones(args):
     res = subprocess.run(
         ['ffmpeg', '-f', 'avfoundation', '-list_devices', 'true', '-i', '""'], 
         text=True,
         capture_output=True,
     )
     devices = [line.strip() for line in res.stderr.split('\n') if 'microphone' in line.lower()]
-    return devices
-
-
-def choose_microphone():
-    devices = find_microphones()
     if not devices:
         print('No microphones found.')
         sys.exit(1)
- 
+
+    mic_index = [i for i, device in enumerate(devices) if 'macbook' in device.lower()][0]
+    if args.choose_mic: mic_index = choose_microphone(devices)
+
+    return f':{mic_index}'
+
+
+def choose_microphone(devices):    
     print('Available microphones:')
     for i, device in enumerate(devices): print(f'{i}: {device}')
  
@@ -48,16 +50,13 @@ def choose_microphone():
     return choice
 
 
-def record_audio(args):
+def record_audio(args, mic_index):
     temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
     temp.close()
 
     ffmpeg_stdout = sys.stdout if args.verbose else subprocess.DEVNULL
     ffmpeg_stderr = sys.stderr if args.verbose else subprocess.DEVNULL
 
-    mic_index = ':0'
-    if args.choose_mic: mic_index = f':{choose_microphone()}'
- 
     process = subprocess.Popen(
         ['ffmpeg', '-y', '-f', 'avfoundation', '-i', mic_index, temp.name], 
         stdin=subprocess.PIPE,
@@ -113,7 +112,8 @@ def copy_to_clipboard(text):
 
 def main():
     args = parse_args()
-    filename = record_audio(args)
+    mic_index = find_microphones(args)
+    filename = record_audio(args, mic_index)
     transcription = transcribe_audio(filename, args)
     print(f'Transcription: {transcription}')
     if not args.no_copy: copy_to_clipboard(transcription)
