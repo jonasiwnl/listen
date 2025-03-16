@@ -55,7 +55,7 @@ def record_audio(args):
     ffmpeg_stdout = sys.stdout if args.verbose else subprocess.DEVNULL
     ffmpeg_stderr = sys.stderr if args.verbose else subprocess.DEVNULL
 
-    mic_index = ':1'
+    mic_index = ':0'
     if args.choose_mic: mic_index = f':{choose_microphone()}'
  
     process = subprocess.Popen(
