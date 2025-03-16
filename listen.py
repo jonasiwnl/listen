@@ -51,7 +51,7 @@ def record_audio(args):
     try:
         process.wait()
     except KeyboardInterrupt:
-        print('\nStopping recording...')
+        print() # newline after Ctrl+C
         process.communicate(b'q')
         process.wait(timeout=2)
         process.terminate()
