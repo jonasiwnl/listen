@@ -2,7 +2,7 @@
 
 A MacOS microphone speech-to-text script using Whisper.
 
-![Listen usage](example.png)
+![Listen usage](example.jpg)
 
 ## Installation
 
