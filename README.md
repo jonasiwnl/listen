@@ -2,6 +2,8 @@
 
 A MacOS microphone speech-to-text script using Whisper.
 
+![Listen usage](example.png)
+
 ## Installation
 
 A python3 runtime is required.

@@ -109,7 +109,24 @@ def transcribe_audio(filename: str, args):
 def copy_to_clipboard(text):
     process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
     process.communicate(input=text.encode('utf-8'))
-    print('Copied to clipboard!')
+    print('Copied to clipboard.')
+
+
+def paste_from_clipboard():
+    subprocess.run([
+        'osascript',
+        '-e',
+        'tell application "System Events" to keystroke "v" using command down',
+    ])
+    print('Pasted from clipboard.')
+    
+
+def enter_key():
+    subprocess.run([
+        'osascript',
+        '-e',
+        'tell application "System Events" to keystroke return',
+    ])
 
 
 def main():
@@ -119,18 +136,8 @@ def main():
     transcription = transcribe_audio(filename, args)
     print(f'Transcription: {transcription}')
     if not args.no_copy: copy_to_clipboard(transcription)
-    if args.paste:
-        subprocess.run([
-            'osascript',
-            '-e',
-            'tell application "System Events" to keystroke "v" using command down',
-        ])
-    if args.enter:
-        subprocess.run([
-            'osascript',
-            '-e',
-            'tell application "System Events" to keystroke return',
-        ])
+    if args.paste: paste_from_clipboard()
+    if args.enter: enter_key()
 
 
 if __name__ == '__main__':
