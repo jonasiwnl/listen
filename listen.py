@@ -14,8 +14,10 @@ import whisper
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no-copy', action='store_true')
-    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('-n', '--no-copy', action='store_true')
+    parser.add_argument('-p', '--paste', action='store_true')
+    parser.add_argument('-e', '--enter', action='store_true')
+    parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('--choose-mic', action='store_true')
     parser.add_argument('-l', '--language', type=str, default='en')
     return parser.parse_args()
@@ -117,6 +119,18 @@ def main():
     transcription = transcribe_audio(filename, args)
     print(f'Transcription: {transcription}')
     if not args.no_copy: copy_to_clipboard(transcription)
+    if args.paste:
+        subprocess.run([
+            'osascript',
+            '-e',
+            'tell application "System Events" to keystroke "v" using command down',
+        ])
+    if args.enter:
+        subprocess.run([
+            'osascript',
+            '-e',
+            'tell application "System Events" to keystroke return',
+        ])
 
 
 if __name__ == '__main__':
