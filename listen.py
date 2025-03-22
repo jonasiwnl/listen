@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import whisper
 
 
@@ -66,6 +67,7 @@ def record_audio(args, mic_index):
         stderr=ffmpeg_stderr,
     )
 
+    time.sleep(0.5)
     print('Recording... Press Ctrl+C to stop.')
 
     try:
