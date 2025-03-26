@@ -9,8 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
-import time
-import whisper
+import faster_whisper
 
 
 def parse_args():
@@ -18,8 +17,11 @@ def parse_args():
     parser.add_argument('-n', '--no-copy', action='store_true')
     parser.add_argument('-p', '--paste', action='store_true')
     parser.add_argument('-e', '--enter', action='store_true')
-    parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('--choose-mic', action='store_true')
+    parser.add_argument('--compute-type', type=str, default='float32')
+    # TODO: toggle between whisper and faster-whisper
+    # parser.add_argument('-f, --fast', action='store_true')
+    # TODO: add a flag for different models
     parser.add_argument('-l', '--language', type=str, default='en')
     return parser.parse_args()
 
@@ -57,24 +59,27 @@ def record_audio(args, mic_index):
     temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
     temp.close()
 
-    ffmpeg_stdout = sys.stdout if args.verbose else subprocess.DEVNULL
-    ffmpeg_stderr = sys.stderr if args.verbose else subprocess.DEVNULL
-
     process = subprocess.Popen(
         ['ffmpeg', '-y', '-f', 'avfoundation', '-i', mic_index, temp.name], 
         stdin=subprocess.PIPE,
-        stdout=ffmpeg_stdout,
-        stderr=ffmpeg_stderr,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
     )
 
-    time.sleep(0.5)
+    while True:
+        line = process.stderr.readline()
+        # Hacky way to wait until ffmpeg recording starts
+        if "Input #" in line or "Stream mapping:" in line:
+            break
+
     print('Recording... Press Ctrl+C to stop.')
 
     try:
         process.wait()
     except KeyboardInterrupt:
         print() # newline after Ctrl+C
-        process.communicate(b'q')
+        process.communicate(input='q')
         process.wait(timeout=2)
         process.terminate()
         try:
@@ -93,19 +98,18 @@ def transcribe_audio(filename: str, args):
     stdout = sys.stdout
     stderr = sys.stderr
 
-    if not args.verbose:
-        sys.stdout = devnull
-        sys.stderr = devnull
+    sys.stdout = devnull
+    sys.stderr = devnull
 
     try:
-        model = whisper.load_model('turbo')
+        model = faster_whisper.WhisperModel("turbo", compute_type=args.compute_type)
     finally:
         sys.stdout = stdout
         sys.stderr = stderr
         devnull.close()
 
-    res = model.transcribe(filename, verbose=args.verbose, language=args.language)
-    return res['text'].strip()
+    segments, _ = model.transcribe(filename, language=args.language)
+    return ''.join(map(lambda segment: segment.text, segments))
 
 
 def copy_to_clipboard(text):
